@@ -2,11 +2,9 @@ package com.evaloper.mini_bank.service.impl;
 
 
 import com.evaloper.mini_bank.domain.entities.UserEntity;
+import com.evaloper.mini_bank.domain.enums.TransactionStatus;
 import com.evaloper.mini_bank.domain.enums.TransactionType;
-import com.evaloper.mini_bank.payload.request.CreditAndDebitRequest;
-import com.evaloper.mini_bank.payload.request.EnquiryRequest;
-import com.evaloper.mini_bank.payload.request.TransactionRequest;
-import com.evaloper.mini_bank.payload.request.TransferRequest;
+import com.evaloper.mini_bank.payload.request.*;
 import com.evaloper.mini_bank.payload.response.AccountInfo;
 import com.evaloper.mini_bank.payload.response.BankResponse;
 import com.evaloper.mini_bank.repository.UserRepository;
@@ -16,13 +14,14 @@ import com.evaloper.mini_bank.utils.AccountUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
-    private final TransactionService transactionService;
+    private final TransactionService transactionService;// $0.01 per byte
     @Override
     public BankResponse balanceEnquiry(EnquiryRequest enquiryRequest) {
         // check if the provided account number exists in the db
@@ -224,6 +223,110 @@ public class UserServiceImpl implements UserService {
                 .responseCode(AccountUtil.TRANSFER_SUCCESSFUL_CODE)
                 .responseMessage(AccountUtil.TRANSFER_SUCCESSFUL_MESSAGE)
                 .accountInfo(null)
+                .build();
+    }
+    @Override
+    public BankResponse buyAirtime(AirtimeRequest request) {
+        boolean isAccountExist = userRepository.existsByAccountNumber(request.getAccountNumber());
+
+        if(!isAccountExist){
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        UserEntity user = userRepository.findByAccountNumber(request.getAccountNumber());
+
+        BigInteger availableBalance = user.getAccountBalance().toBigInteger();
+        BigInteger airtimeAmount = BigInteger.valueOf(request.getAmount());
+
+        if(availableBalance.intValue() < airtimeAmount.intValue()){
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.INSUFFICIENT_BALANCE_CODE)
+                    .responseMessage(AccountUtil.INSUFFICIENT_BALANCE_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        user.setAccountBalance(user.getAccountBalance().subtract(BigDecimal.valueOf(request.getAmount())));
+        userRepository.save(user);
+
+        TransactionRequest transactionRequest = TransactionRequest.builder()
+                .accountNumber(user.getAccountNumber())
+                .transactionType(TransactionType.BUY_AIRTIME)
+                .amount(BigDecimal.valueOf(request.getAmount()))
+                .build();
+
+        transactionService.saveTransaction(transactionRequest);
+
+        return BankResponse.builder()
+                .responseCode(AccountUtil.AIRTIME_PURCHASE_SUCCESS_CODE)
+                .responseMessage(AccountUtil.AIRTIME_PURCHASE_SUCCESS_MESSAGE)
+                .accountInfo(AccountInfo.builder()
+                        .accountName(user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName())
+                        .accountBalance(user.getAccountBalance())
+                        .accountNumber(request.getAccountNumber())
+                        .build())
+                .build();
+    }
+
+    @Override
+    public BankResponse buyData(DataRequest request) {
+        boolean isAccountExist = userRepository.existsByAccountNumber(request.getAccountNumber());
+
+        if(!isAccountExist){
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        UserEntity user = userRepository.findByAccountNumber(request.getAccountNumber());
+
+        int dataAmount = request.getDataAmountInBytes(request.getDataAmount());
+        String dataAmountInBytes = request.getDataAmount();
+
+        BigDecimal amountToDeduct = BigDecimal.valueOf(dataAmount);
+
+        BigDecimal availableBalance = user.getAccountBalance();
+        BigDecimal availableBalanceBigDecimal = new BigDecimal(availableBalance.intValue());
+
+        if (availableBalanceBigDecimal.compareTo(amountToDeduct) < 0){
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.INSUFFICIENT_BALANCE_CODE)
+                    .responseMessage(AccountUtil.INSUFFICIENT_BALANCE_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        System.out.println("amountToDeduct: " + amountToDeduct);
+        System.out.println("accountBalance: " + user.getAccountBalance());
+        System.out.println("dataAmountInBytes: " + dataAmountInBytes);
+//        System.out.println("dataCostPerByte: " + dataCostPerByte);
+
+        user.setAccountBalance(user.getAccountBalance().subtract(amountToDeduct));
+        userRepository.save(user);
+
+        TransactionRequest transactionRequest = TransactionRequest.builder()
+                .accountNumber(user.getAccountNumber())
+                .transactionType(TransactionType.BUY_DATA)
+                .amount(amountToDeduct)
+                .status(TransactionStatus.COMPLETED)
+                .build();
+
+        transactionService.saveTransaction(transactionRequest);
+
+        return BankResponse.builder()
+                .responseCode(AccountUtil.DATA_PURCHASE_SUCCESS_CODE)
+                .responseMessage(AccountUtil.DATA_PURCHASE_SUCCESS_MESSAGE)
+                .accountInfo(AccountInfo.builder()
+                        .accountName(user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName())
+                        .accountBalance(user.getAccountBalance())
+                        .accountNumber(request.getAccountNumber())
+                        .build())
                 .build();
     }
 }

@@ -30,7 +30,13 @@ public class AccountUtil {
     public static final String LOGIN_FAILURE_CODE="009";
     public static final String LOGIN_FAILURE_MESSAGE="Invalid email or password";
     public static final String LOGIN_SUCCESS_CODE="009";
-    public static final String LOGIN_SUCCESS_MESSAGE="Login successful";
+    public static final String LOGIN_SUCCESS_MESSAGE="Logged in successfully";
+    public static final String AIRTIME_PURCHASE_SUCCESS_CODE="010";
+    public static final String AIRTIME_PURCHASE_SUCCESS_MESSAGE="Airtime purchased successfully";
+    public static final String DATA_PURCHASE_SUCCESS_CODE="011";
+    public static final String DATA_PURCHASE_SUCCESS_MESSAGE="Data purchased successfully";
+
+
 
     public static String generateAccountNumber(){
 

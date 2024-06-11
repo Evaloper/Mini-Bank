@@ -21,9 +21,14 @@ public class Transaction{
     // uuid will allow us generate unique random characters, is used by most banks
     @GeneratedValue(strategy = GenerationType.UUID)
     private String transactionId;
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
+    @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
     private String accountNumber;
     private BigDecimal amount;
+    @Enumerated(EnumType.STRING)
     private TransactionStatus status;
     @CreationTimestamp
     private LocalDate createdAt;

@@ -1,8 +1,6 @@
 package com.evaloper.mini_bank.infastructure.controller;
 
-import com.evaloper.mini_bank.payload.request.CreditAndDebitRequest;
-import com.evaloper.mini_bank.payload.request.EnquiryRequest;
-import com.evaloper.mini_bank.payload.request.TransferRequest;
+import com.evaloper.mini_bank.payload.request.*;
 import com.evaloper.mini_bank.payload.response.BankResponse;
 import com.evaloper.mini_bank.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +35,16 @@ public class UserController {
     @PostMapping("/transfer")
     public BankResponse transfer(@RequestBody TransferRequest request){
         return userService.transfer(request);
+    }
+
+    @PostMapping("/buy-airtime")
+    public BankResponse buyAirtime(@RequestBody AirtimeRequest request) {
+        return userService.buyAirtime(request);
+    }
+
+    @PostMapping("/buy-data")
+    public BankResponse buyData(@RequestBody DataRequest request) {
+        return userService.buyData(request);
     }
 }
 

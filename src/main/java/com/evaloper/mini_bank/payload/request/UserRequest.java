@@ -20,7 +20,7 @@ public class UserRequest {
     @Size(min = 2, max = 125, message = "last name must be at least 2 characters")
     @NotBlank(message = "last name must not be blank")
     private String lastName;
-    @Size(min = 1, max = 125, message = "Other names must be at least 2 characters")
+    @Size(min = 1, max = 125, message = "Other names must be at least 1 character")
     @NotBlank(message = "Other names must not be blank")
     private String otherName;
 

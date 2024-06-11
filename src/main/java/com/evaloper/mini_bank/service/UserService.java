@@ -1,8 +1,6 @@
 package com.evaloper.mini_bank.service;
 
-import com.evaloper.mini_bank.payload.request.CreditAndDebitRequest;
-import com.evaloper.mini_bank.payload.request.EnquiryRequest;
-import com.evaloper.mini_bank.payload.request.TransferRequest;
+import com.evaloper.mini_bank.payload.request.*;
 import com.evaloper.mini_bank.payload.response.BankResponse;
 
 public interface UserService {
@@ -14,5 +12,8 @@ public interface UserService {
     BankResponse debitAccount(CreditAndDebitRequest request);
 
     BankResponse transfer(TransferRequest request);
+
+    BankResponse buyAirtime(AirtimeRequest request);
+    BankResponse buyData(DataRequest request);
 
 }
