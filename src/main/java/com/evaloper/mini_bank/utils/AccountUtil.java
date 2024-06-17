@@ -35,6 +35,8 @@ public class AccountUtil {
     public static final String AIRTIME_PURCHASE_SUCCESS_MESSAGE="Airtime purchased successfully";
     public static final String DATA_PURCHASE_SUCCESS_CODE="011";
     public static final String DATA_PURCHASE_SUCCESS_MESSAGE="Data purchased successfully";
+    public static final String PHONE_NUMBER_NON_EXISTS_CODE="012";
+    public static final String PHONE_NUMBER_NON_EXISTS_MESSAGE="Phone number is not registered";
 
 
 

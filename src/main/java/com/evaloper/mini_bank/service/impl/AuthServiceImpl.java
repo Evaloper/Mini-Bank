@@ -1,14 +1,13 @@
 package com.evaloper.mini_bank.service.impl;
 
 import com.evaloper.mini_bank.domain.entities.UserEntity;
-import com.evaloper.mini_bank.payload.LoginRequest;
+import com.evaloper.mini_bank.payload.request.CreditAndDebitRequest;
 import com.evaloper.mini_bank.payload.request.UserRequest;
 import com.evaloper.mini_bank.payload.response.AccountInfo;
 import com.evaloper.mini_bank.payload.response.BankResponse;
 import com.evaloper.mini_bank.repository.UserRepository;
 import com.evaloper.mini_bank.service.AuthService;
 import com.evaloper.mini_bank.utils.AccountUtil;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +61,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<BankResponse> login(LoginRequest loginRequest) {
+    public ResponseEntity<BankResponse> login(CreditAndDebitRequest.LoginRequest loginRequest) {
         Optional<UserEntity> userEntityOptional = userRepository.findByEmail(loginRequest.getEmail());
 
         if (!userEntityOptional.isPresent() ||

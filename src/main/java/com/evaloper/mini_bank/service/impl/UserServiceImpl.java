@@ -7,6 +7,7 @@ import com.evaloper.mini_bank.domain.enums.TransactionType;
 import com.evaloper.mini_bank.payload.request.*;
 import com.evaloper.mini_bank.payload.response.AccountInfo;
 import com.evaloper.mini_bank.payload.response.BankResponse;
+import com.evaloper.mini_bank.payload.response.PhoneNumberResponse;
 import com.evaloper.mini_bank.repository.UserRepository;
 import com.evaloper.mini_bank.service.TransactionService;
 import com.evaloper.mini_bank.service.UserService;
@@ -61,6 +62,23 @@ public class UserServiceImpl implements UserService {
 
         UserEntity foundUser = userRepository.findByAccountNumber(enquiryRequest.getAccountNumber());
         return foundUser.getFirstName() + " " + foundUser.getLastName() + " " + foundUser.getOtherName();
+    }
+
+    @Override
+    public PhoneNumberResponse PhoneNumberEnquiry(PhoneNumberEnquiryRequest request) {
+        boolean isPhoneNumberExists = userRepository.existsByPhoneNumber(request.getPhoneNumber());
+        if (!isPhoneNumberExists) {
+            return PhoneNumberResponse.builder()
+                    .responseCode(AccountUtil.PHONE_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.PHONE_NUMBER_NON_EXISTS_MESSAGE)
+                    .phoneNumber(null)
+                    .build();
+        }
+        UserEntity foundUser = userRepository.findByPhoneNumber(request.getPhoneNumber());
+
+        return PhoneNumberResponse.builder()
+                .phoneNumber(foundUser.getPhoneNumber())
+                .build();
     }
 
     @Override

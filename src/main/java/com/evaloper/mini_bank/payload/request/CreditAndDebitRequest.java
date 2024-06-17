@@ -14,4 +14,12 @@ import java.math.BigDecimal;
 public class CreditAndDebitRequest {
     private String accountNumber;
     private BigDecimal amount;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class LoginRequest {
+        private String email;
+        private String password;
+    }
 }

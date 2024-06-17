@@ -1,6 +1,6 @@
 package com.evaloper.mini_bank.infastructure.controller;
 
-import com.evaloper.mini_bank.payload.LoginRequest;
+import com.evaloper.mini_bank.payload.request.CreditAndDebitRequest;
 import com.evaloper.mini_bank.payload.request.UserRequest;
 import com.evaloper.mini_bank.payload.response.BankResponse;
 import com.evaloper.mini_bank.service.AuthService;
@@ -22,7 +22,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<BankResponse> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<BankResponse> login(@RequestBody CreditAndDebitRequest.LoginRequest loginRequest) {
         return authService.login(loginRequest);
     }
 }
