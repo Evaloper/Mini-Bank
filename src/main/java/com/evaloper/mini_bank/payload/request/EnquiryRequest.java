@@ -11,4 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class EnquiryRequest {
     private String accountNumber;
+    private String phoneNumber;
 }

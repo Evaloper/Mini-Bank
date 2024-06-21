@@ -7,6 +7,7 @@ import com.evaloper.mini_bank.domain.enums.TransactionType;
 import com.evaloper.mini_bank.payload.request.*;
 import com.evaloper.mini_bank.payload.response.AccountInfo;
 import com.evaloper.mini_bank.payload.response.BankResponse;
+import com.evaloper.mini_bank.payload.response.NameAccountResponse;
 import com.evaloper.mini_bank.payload.response.PhoneNumberResponse;
 import com.evaloper.mini_bank.repository.UserRepository;
 import com.evaloper.mini_bank.service.TransactionService;
@@ -61,8 +62,33 @@ public class UserServiceImpl implements UserService {
         }
 
         UserEntity foundUser = userRepository.findByAccountNumber(enquiryRequest.getAccountNumber());
-        return foundUser.getFirstName() + " " + foundUser.getLastName() + " " + foundUser.getOtherName();
+        return foundUser.getFirstName() + " " + foundUser.getLastName();
     }
+
+    @Override
+    public NameAccountResponse nameAndAccountEnquiry(EnquiryRequest enquiryRequest) {
+        boolean isPhoneNumberExists = userRepository.existsByPhoneNumber(enquiryRequest.getPhoneNumber());
+
+        if (!isPhoneNumberExists) {
+            return NameAccountResponse.builder()
+                    .responseCode(AccountUtil.PHONE_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.PHONE_NUMBER_NON_EXISTS_MESSAGE)
+                    .firstName(null)
+                    .lastName(null)
+                    .accountNumber(null)
+                    .build();
+        }
+
+        UserEntity foundUser = userRepository.findByPhoneNumber(enquiryRequest.getPhoneNumber());
+        return NameAccountResponse.builder()
+                .responseCode(AccountUtil.PHONE_NUMBER_FOUND_CODE)
+                .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
+                .firstName(foundUser.getFirstName())
+                .lastName(foundUser.getLastName())
+                .accountNumber(foundUser.getAccountNumber())
+                .build();
+    }
+
 
     @Override
     public PhoneNumberResponse PhoneNumberEnquiry(PhoneNumberEnquiryRequest request) {

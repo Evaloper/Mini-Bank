@@ -37,6 +37,8 @@ public class AccountUtil {
     public static final String DATA_PURCHASE_SUCCESS_MESSAGE="Data purchased successfully";
     public static final String PHONE_NUMBER_NON_EXISTS_CODE="012";
     public static final String PHONE_NUMBER_NON_EXISTS_MESSAGE="Phone number is not registered";
+    public static final String PHONE_NUMBER_FOUND_CODE="013";
+    public static final String PHONE_NUMBER_FOUND_MESSAGE="Phone number Exists";
 
 
 

@@ -3,6 +3,7 @@ package com.evaloper.mini_bank.infastructure.controller;
 import com.evaloper.mini_bank.domain.entities.UserEntity;
 import com.evaloper.mini_bank.payload.request.*;
 import com.evaloper.mini_bank.payload.response.BankResponse;
+import com.evaloper.mini_bank.payload.response.NameAccountResponse;
 import com.evaloper.mini_bank.payload.response.PhoneNumberResponse;
 import com.evaloper.mini_bank.repository.UserRepository;
 import com.evaloper.mini_bank.service.UserService;
@@ -30,9 +31,16 @@ public class UserController {
         return  userService.balanceEnquiry(request);
     }
 
-    @GetMapping("/name-enquiry")
-    public String nameEnquiry(@RequestBody EnquiryRequest request){
-        return userService.nameEnquiry(request);
+//    @GetMapping("/name-enquiry")
+//    public String nameEnquiry(@RequestBody EnquiryRequest request){
+//        return userService.nameEnquiry(request);
+//    }
+
+    @GetMapping("/name-account-enquiry/{phoneNumber}")
+    public ResponseEntity<NameAccountResponse> nameEnquiry(@PathVariable String phoneNumber) {
+        EnquiryRequest request = EnquiryRequest.builder().phoneNumber(phoneNumber).build();
+        NameAccountResponse response = userService.nameAndAccountEnquiry(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/phone-enquiry")
