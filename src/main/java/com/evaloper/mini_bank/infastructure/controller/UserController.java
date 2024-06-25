@@ -17,8 +17,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+
     @Autowired
     private UserRepository userRepository;
+
+//    public UserController(UserService userService) {
+//        this.userService = userService;
+//    }
 
     @GetMapping("/check-phone")
     public boolean validatePhoneNumber(@RequestParam String phoneNumber) {
@@ -38,7 +43,9 @@ public class UserController {
 
     @GetMapping("/name-account-enquiry/{phoneNumber}")
     public ResponseEntity<NameAccountResponse> nameEnquiry(@PathVariable String phoneNumber) {
-        EnquiryRequest request = EnquiryRequest.builder().phoneNumber(phoneNumber).build();
+        EnquiryRequest request = EnquiryRequest.builder()
+                .phoneNumber(phoneNumber)
+                .build();
         NameAccountResponse response = userService.nameAndAccountEnquiry(request);
         return ResponseEntity.ok(response);
     }
