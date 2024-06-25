@@ -17,6 +17,6 @@ private final ApiKeyInterceptor apiKeyInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(apiKeyInterceptor).addPathPatterns("/api/user/**");
+        registry.addInterceptor(apiKeyInterceptor).addPathPatterns("/api/v1/user/**");
     }
 }
