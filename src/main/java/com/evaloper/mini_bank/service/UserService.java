@@ -7,7 +7,7 @@ import com.evaloper.mini_bank.payload.response.PhoneNumberResponse;
 
 public interface UserService {
     BankResponse balanceEnquiry(EnquiryRequest enquiryRequest);
-    public String nameEnquiry(EnquiryRequest enquiryRequest);
+    public NameAccountResponse nameEnquiry(EnquiryRequest enquiryRequest);
     public NameAccountResponse nameAndAccountEnquiry(EnquiryRequest enquiryRequest);
 
     PhoneNumberResponse PhoneNumberEnquiry(PhoneNumberEnquiryRequest request);

@@ -21,10 +21,6 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-//    public UserController(UserService userService) {
-//        this.userService = userService;
-//    }
-
     @GetMapping("/check-phone")
     public boolean validatePhoneNumber(@RequestParam String phoneNumber) {
         UserEntity user = userRepository.findByPhoneNumber(phoneNumber);
@@ -32,20 +28,22 @@ public class UserController {
     }
 
     @GetMapping("/balance-enquiry")
-    public BankResponse balanceEnquiry(@RequestBody EnquiryRequest request){
-        return  userService.balanceEnquiry(request);
+    public ResponseEntity<BankResponse> balanceEnquiry(@RequestParam String accountNumber) {
+        EnquiryRequest request =  EnquiryRequest.builder().accountNumber(accountNumber).build();
+        BankResponse response = userService.balanceEnquiry(request);
+        return ResponseEntity.ok(response);
     }
 
-//    @GetMapping("/name-enquiry")
-//    public String nameEnquiry(@RequestBody EnquiryRequest request){
-//        return userService.nameEnquiry(request);
-//    }
+    @GetMapping("/name-enquiry")
+    public ResponseEntity<NameAccountResponse> nameEnquiry(@RequestParam String accountNumber) {
+        EnquiryRequest request = EnquiryRequest.builder().accountNumber(accountNumber).build();
+        NameAccountResponse response = userService.nameEnquiry(request);
+        return ResponseEntity.ok(response);
+    }
 
     @GetMapping("/name-account-enquiry/{phoneNumber}")
-    public ResponseEntity<NameAccountResponse> nameEnquiry(@PathVariable String phoneNumber) {
-        EnquiryRequest request = EnquiryRequest.builder()
-                .phoneNumber(phoneNumber)
-                .build();
+    public ResponseEntity<NameAccountResponse> nameAndAccountEnquiry(@PathVariable String phoneNumber) {
+        EnquiryRequest request = EnquiryRequest.builder().phoneNumber(phoneNumber).build();
         NameAccountResponse response = userService.nameAndAccountEnquiry(request);
         return ResponseEntity.ok(response);
     }

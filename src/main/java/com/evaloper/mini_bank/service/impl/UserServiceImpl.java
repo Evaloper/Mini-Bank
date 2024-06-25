@@ -54,15 +54,27 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String nameEnquiry(EnquiryRequest enquiryRequest) {
+    public NameAccountResponse nameEnquiry(EnquiryRequest enquiryRequest) {
         boolean isAccountExist = userRepository.existsByAccountNumber(enquiryRequest.getAccountNumber());
 
         if(!isAccountExist){
-            return AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE;
+            return NameAccountResponse.builder()
+                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
+                    .firstName(null)
+                    .lastName(null)
+                    .accountNumber(null)
+                    .build();
         }
 
         UserEntity foundUser = userRepository.findByAccountNumber(enquiryRequest.getAccountNumber());
-        return foundUser.getFirstName() + " " + foundUser.getLastName();
+        return NameAccountResponse.builder()
+                .responseCode(AccountUtil.PHONE_NUMBER_FOUND_CODE)
+                .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
+                .firstName(foundUser.getFirstName())
+                .lastName(foundUser.getLastName())
+                .accountNumber(foundUser.getAccountNumber())
+                .build();
     }
 
     @Override
