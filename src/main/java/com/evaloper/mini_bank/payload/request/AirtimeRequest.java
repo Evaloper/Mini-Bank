@@ -14,5 +14,5 @@ import java.math.BigDecimal;
 public class AirtimeRequest {
     private String accountNumber;
     private String phoneNumber;
-    private int amount;
+    private BigDecimal amount;
 }

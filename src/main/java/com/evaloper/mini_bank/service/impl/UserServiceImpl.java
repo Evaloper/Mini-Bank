@@ -14,7 +14,10 @@ import com.evaloper.mini_bank.service.TransactionService;
 import com.evaloper.mini_bank.service.UserService;
 import com.evaloper.mini_bank.utils.AccountUtil;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -24,6 +27,7 @@ import java.math.BigInteger;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final TransactionService transactionService;// $0.01 per byte
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     @Override
     public BankResponse balanceEnquiry(EnquiryRequest enquiryRequest) {
         // check if the provided account number exists in the db
@@ -118,6 +122,7 @@ public class UserServiceImpl implements UserService {
                 .phoneNumber(foundUser.getPhoneNumber())
                 .build();
     }
+
 
     @Override
     public BankResponse creditAccount(CreditAndDebitRequest request) {
@@ -281,11 +286,26 @@ public class UserServiceImpl implements UserService {
                 .accountInfo(null)
                 .build();
     }
+
     @Override
+    @Transactional
     public BankResponse buyAirtime(AirtimeRequest request) {
+        // Validate request
+        if (request.getAccountNumber() == null || request.getPhoneNumber() == null || request.getAmount() == null) {
+            logger.error("Invalid request: {}", request);
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
+
+        logger.info("Checking if account exists for account number: {}", request.getAccountNumber());
         boolean isAccountExist = userRepository.existsByAccountNumber(request.getAccountNumber());
 
-        if(!isAccountExist){
+        logger.info("Account existence check result for {}: {}", request.getAccountNumber(), isAccountExist);
+
+        if (!isAccountExist) {
             return BankResponse.builder()
                     .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
                     .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
@@ -295,10 +315,21 @@ public class UserServiceImpl implements UserService {
 
         UserEntity user = userRepository.findByAccountNumber(request.getAccountNumber());
 
-        BigInteger availableBalance = user.getAccountBalance().toBigInteger();
-        BigInteger airtimeAmount = BigInteger.valueOf(request.getAmount());
+        if (user == null) {
+            logger.error("Account number {} not found despite existence check passing", request.getAccountNumber());
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
+                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
 
-        if(availableBalance.intValue() < airtimeAmount.intValue()){
+        BigDecimal availableBalance = user.getAccountBalance();
+        BigDecimal airtimeAmount = request.getAmount();
+
+        logger.info("Available balance: {}, Airtime amount: {}", availableBalance, airtimeAmount);
+
+        if (airtimeAmount.compareTo(availableBalance) > 0) {
             return BankResponse.builder()
                     .responseCode(AccountUtil.INSUFFICIENT_BALANCE_CODE)
                     .responseMessage(AccountUtil.INSUFFICIENT_BALANCE_MESSAGE)
@@ -306,29 +337,42 @@ public class UserServiceImpl implements UserService {
                     .build();
         }
 
-        user.setAccountBalance(user.getAccountBalance().subtract(BigDecimal.valueOf(request.getAmount())));
-        userRepository.save(user);
+        try {
+            // Deduct airtime amount from user's balance
+            user.setAccountBalance(availableBalance.subtract(airtimeAmount));
+            userRepository.save(user);
+            logger.info("New balance after deduction: {}", user.getAccountBalance());
 
-        TransactionRequest transactionRequest = TransactionRequest.builder()
-                .accountNumber(user.getAccountNumber())
-                .transactionType(TransactionType.BUY_AIRTIME)
-                .amount(BigDecimal.valueOf(request.getAmount()))
-                .build();
+            // Save transaction
+            TransactionRequest transactionRequest = TransactionRequest.builder()
+                    .accountNumber(user.getAccountNumber())
+                    .transactionType(TransactionType.BUY_AIRTIME)
+                    .amount(airtimeAmount)
+                    .build();
+            transactionService.saveTransaction(transactionRequest);
 
-        transactionService.saveTransaction(transactionRequest);
+            // Build response
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.AIRTIME_PURCHASE_SUCCESS_CODE)
+                    .responseMessage(AccountUtil.AIRTIME_PURCHASE_SUCCESS_MESSAGE)
+                    .accountInfo(AccountInfo.builder()
+                            .accountName(user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName())
+                            .accountBalance(user.getAccountBalance())
+                            .accountNumber(request.getAccountNumber())
+                            .build())
+                    .build();
 
-        return BankResponse.builder()
-                .responseCode(AccountUtil.AIRTIME_PURCHASE_SUCCESS_CODE)
-                .responseMessage(AccountUtil.AIRTIME_PURCHASE_SUCCESS_MESSAGE)
-                .accountInfo(AccountInfo.builder()
-                        .accountName(user.getFirstName() + " " + user.getLastName() + " " + user.getOtherName())
-                        .accountBalance(user.getAccountBalance())
-                        .accountNumber(request.getAccountNumber())
-                        .build())
-                .build();
+        } catch (Exception e) {
+            logger.error("Error purchasing airtime for account {}: ", request.getAccountNumber(), e);
+            return BankResponse.builder()
+                    .responseCode(AccountUtil.TRANSACTION_ERROR_CODE)
+                    .responseMessage(AccountUtil.TRANSACTION_ERROR_MESSAGE)
+                    .accountInfo(null)
+                    .build();
+        }
     }
 
-    @Override
+@Override
     public BankResponse buyData(DataRequest request) {
         boolean isAccountExist = userRepository.existsByAccountNumber(request.getAccountNumber());
 

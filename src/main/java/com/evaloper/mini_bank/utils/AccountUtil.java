@@ -39,6 +39,8 @@ public class AccountUtil {
     public static final String PHONE_NUMBER_NON_EXISTS_MESSAGE="Phone number is not registered";
     public static final String PHONE_NUMBER_FOUND_CODE="013";
     public static final String PHONE_NUMBER_FOUND_MESSAGE="Phone number Exists";
+    public static final String TRANSACTION_ERROR_CODE="014";
+    public static final String TRANSACTION_ERROR_MESSAGE="Transaction Error Message";
 
 
 

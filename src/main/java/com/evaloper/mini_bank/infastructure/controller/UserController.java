@@ -22,10 +22,15 @@ public class UserController {
     private UserRepository userRepository;
 
     @GetMapping("/check-phone")
-    public boolean validatePhoneNumber(@RequestParam String phoneNumber) {
-        UserEntity user = userRepository.findByPhoneNumber(phoneNumber);
-        return user != null;
+    public ResponseEntity<Boolean> validatePhoneNumber(@RequestParam String phoneNumber) {
+        PhoneNumberEnquiryRequest request = PhoneNumberEnquiryRequest.builder().phoneNumber(phoneNumber).build();
+        PhoneNumberResponse response = userService.PhoneNumberEnquiry(request);
+
+        // Check if the response indicates that the phone number exists
+        boolean isValid = response != null && response.getPhoneNumber() != null;
+        return ResponseEntity.ok(isValid);
     }
+
 
     @GetMapping("/balance-enquiry")
     public ResponseEntity<BankResponse> balanceEnquiry(@RequestParam String accountNumber) {
@@ -66,13 +71,15 @@ public class UserController {
     }
 
     @PostMapping("/transfer")
-    public BankResponse transfer(@RequestBody TransferRequest request){
-        return userService.transfer(request);
+    public ResponseEntity<BankResponse>  transfer(@RequestBody TransferRequest request){
+        BankResponse response = userService.transfer(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/buy-airtime")
-    public BankResponse buyAirtime(@RequestBody AirtimeRequest request) {
-        return userService.buyAirtime(request);
+    public ResponseEntity<BankResponse> buyAirtime(@RequestBody AirtimeRequest request) {
+        BankResponse response = userService.buyAirtime(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/buy-data")
