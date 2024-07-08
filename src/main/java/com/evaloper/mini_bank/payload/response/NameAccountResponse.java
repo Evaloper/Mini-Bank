@@ -14,6 +14,7 @@ public class NameAccountResponse {
     private String responseMessage;
     private String firstName;
     private String lastName;
+    private String otherName;
     private String accountNumber;
 
 }

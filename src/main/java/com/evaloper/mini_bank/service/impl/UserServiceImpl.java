@@ -77,6 +77,7 @@ public class UserServiceImpl implements UserService {
                 .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
                 .firstName(foundUser.getFirstName())
                 .lastName(foundUser.getLastName())
+                .otherName(foundUser.getOtherName())
                 .accountNumber(foundUser.getAccountNumber())
                 .build();
     }
@@ -101,6 +102,7 @@ public class UserServiceImpl implements UserService {
                 .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
                 .firstName(foundUser.getFirstName())
                 .lastName(foundUser.getLastName())
+                .otherName(foundUser.getOtherName())
                 .accountNumber(foundUser.getAccountNumber())
                 .build();
     }
