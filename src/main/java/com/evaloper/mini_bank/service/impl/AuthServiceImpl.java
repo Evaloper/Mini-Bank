@@ -21,16 +21,25 @@ import java.util.Optional;
 public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
 
+
+
     @Override
     public BankResponse registerUser(UserRequest userRequest) {
-        // Register user implementation remains the same
-        if(userRepository.existsByEmail(userRequest.getEmail())){
+
+        // Checks if the user already exists
+
+        String normalizedPhoneNumber = normalizePhoneNumber(userRequest.getPhoneNumber());
+        String normalizedAlternativeNumber = normalizePhoneNumber(userRequest.getAlternativeNumber());
+
+        if(userRepository.existsByPhoneNumber(normalizedPhoneNumber)){
             return BankResponse.builder()
                     .responseCode(AccountUtil.ACCOUNT_EXISTS_CODE)
                     .responseMessage(AccountUtil.ACCOUNT_EXISTS_MESSAGE)
                     .accountInfo(null)
                     .build();
         }
+
+
 
         UserEntity newUser = UserEntity.builder()
                 .firstName(userRequest.getFirstName())
@@ -43,8 +52,8 @@ public class AuthServiceImpl implements AuthService {
                 .accountBalance(BigDecimal.ZERO)
                 .email(userRequest.getEmail())
                 .password(userRequest.getPassword()) // Store the password as plain text (not recommended)
-                .phoneNumber(userRequest.getPhoneNumber())
-                .alternativeNumber(userRequest.getAlternativeNumber())
+                .phoneNumber(normalizedPhoneNumber)
+                .alternativeNumber(normalizedAlternativeNumber)
                 .status("ACTIVE")
                 .build();
 
@@ -88,5 +97,22 @@ public class AuthServiceImpl implements AuthService {
                         .build(),
                 HttpStatus.OK
         );
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            return null;
+        }
+        // Remove any non-digit characters
+        phoneNumber = phoneNumber.replaceAll("[^\\d]", "");
+
+        // Add country code if missing
+        if (phoneNumber.startsWith("0")) {
+            phoneNumber = "+234" + phoneNumber.substring(1);
+        } else if (!phoneNumber.startsWith("+")) {
+            phoneNumber = "+234" + phoneNumber;
+        }
+
+        return phoneNumber;
     }
 }
