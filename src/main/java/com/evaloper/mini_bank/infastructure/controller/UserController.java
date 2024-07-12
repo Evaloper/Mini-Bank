@@ -7,16 +7,25 @@ import com.evaloper.mini_bank.payload.response.NameAccountResponse;
 import com.evaloper.mini_bank.payload.response.PhoneNumberResponse;
 import com.evaloper.mini_bank.repository.UserRepository;
 import com.evaloper.mini_bank.service.UserService;
+import com.evaloper.mini_bank.service.impl.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.context.MessageSource;
+import org.springframework.http.*;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Locale;
 
 @RestController
 @RequestMapping("/api/v1/user")
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
+
+    private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Autowired
     private UserRepository userRepository;

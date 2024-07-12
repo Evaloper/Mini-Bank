@@ -1,7 +1,9 @@
 package com.evaloper.mini_bank.service.impl;
 
 
+import com.evaloper.mini_bank.config.AirtimeConfig;
 import com.evaloper.mini_bank.domain.entities.UserEntity;
+import com.evaloper.mini_bank.domain.enums.NetworkProvider;
 import com.evaloper.mini_bank.domain.enums.TransactionStatus;
 import com.evaloper.mini_bank.domain.enums.TransactionType;
 import com.evaloper.mini_bank.payload.request.*;
@@ -13,9 +15,12 @@ import com.evaloper.mini_bank.repository.UserRepository;
 import com.evaloper.mini_bank.service.TransactionService;
 import com.evaloper.mini_bank.service.UserService;
 import com.evaloper.mini_bank.utils.AccountUtil;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.http.HttpResponse;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +32,8 @@ import java.math.BigInteger;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final TransactionService transactionService;// $0.01 per byte
+    @Autowired
+    private AirtimeConfig airtimeConfig;
     private static final Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     @Override
     public BankResponse balanceEnquiry(EnquiryRequest enquiryRequest) {
@@ -77,6 +84,7 @@ public class UserServiceImpl implements UserService {
                 .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
                 .firstName(foundUser.getFirstName())
                 .lastName(foundUser.getLastName())
+                .otherName(foundUser.getOtherName())
                 .accountNumber(foundUser.getAccountNumber())
                 .build();
     }
@@ -101,6 +109,7 @@ public class UserServiceImpl implements UserService {
                 .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
                 .firstName(foundUser.getFirstName())
                 .lastName(foundUser.getLastName())
+                .otherName(foundUser.getOtherName())
                 .accountNumber(foundUser.getAccountNumber())
                 .build();
     }
@@ -290,64 +299,40 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public BankResponse buyAirtime(AirtimeRequest request) {
-        // Validate request
-        if (request.getAccountNumber() == null || request.getPhoneNumber() == null || request.getAmount() == null) {
-            logger.error("Invalid request: {}", request);
-            return BankResponse.builder()
-                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
-                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        }
-
-        logger.info("Checking if account exists for account number: {}", request.getAccountNumber());
-        boolean isAccountExist = userRepository.existsByAccountNumber(request.getAccountNumber());
-
-        logger.info("Account existence check result for {}: {}", request.getAccountNumber(), isAccountExist);
-
-        if (!isAccountExist) {
-            return BankResponse.builder()
-                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
-                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        }
-
-        UserEntity user = userRepository.findByAccountNumber(request.getAccountNumber());
-
-        if (user == null) {
-            logger.error("Account number {} not found despite existence check passing", request.getAccountNumber());
-            return BankResponse.builder()
-                    .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
-                    .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        }
-
-        BigDecimal availableBalance = user.getAccountBalance();
-        BigDecimal airtimeAmount = request.getAmount();
-
-        logger.info("Available balance: {}, Airtime amount: {}", availableBalance, airtimeAmount);
-
-        if (airtimeAmount.compareTo(availableBalance) > 0) {
-            return BankResponse.builder()
-                    .responseCode(AccountUtil.INSUFFICIENT_BALANCE_CODE)
-                    .responseMessage(AccountUtil.INSUFFICIENT_BALANCE_MESSAGE)
-                    .accountInfo(null)
-                    .build();
-        }
-
         try {
+            // Check if the account exists
+            UserEntity user = userRepository.findByAccountNumber(request.getAccountNumber());
+            if (user == null) {
+                return BankResponse.builder()
+                        .responseCode(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_CODE)
+                        .responseMessage(AccountUtil.ACCOUNT_NUMBER_NON_EXISTS_MESSAGE)
+                        .accountInfo(null)
+                        .build();
+            }
+
+            // Check for insufficient balance
+            if (user.getAccountBalance().compareTo(request.getAmount()) < 0) {
+                return BankResponse.builder()
+                        .responseCode(AccountUtil.INSUFFICIENT_BALANCE_CODE)
+                        .responseMessage(AccountUtil.INSUFFICIENT_BALANCE_MESSAGE)
+                        .accountInfo(null)
+                        .build();
+            }
+
             // Deduct airtime amount from user's balance
-            user.setAccountBalance(availableBalance.subtract(airtimeAmount));
-            userRepository.save(user);
+            user.setAccountBalance(user.getAccountBalance().subtract(request.getAmount()));
+            userRepository.save(user); // Save the updated user entity
             logger.info("New balance after deduction: {}", user.getAccountBalance());
+
+            // Call the recharge method
+            String rechargeResponse = recharge(request.getPhoneNumber(), NetworkProvider.valueOf(request.getNetwork().name()), request.getAmount());
+            logger.info("Recharge response: {}", rechargeResponse);
 
             // Save transaction
             TransactionRequest transactionRequest = TransactionRequest.builder()
                     .accountNumber(user.getAccountNumber())
                     .transactionType(TransactionType.BUY_AIRTIME)
-                    .amount(airtimeAmount)
+                    .amount(request.getAmount())
                     .build();
             transactionService.saveTransaction(transactionRequest);
 
@@ -372,7 +357,8 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-@Override
+
+    @Override
     public BankResponse buyData(DataRequest request) {
         boolean isAccountExist = userRepository.existsByAccountNumber(request.getAccountNumber());
 
@@ -429,5 +415,26 @@ public class UserServiceImpl implements UserService {
                         .build())
                 .build();
     }
+    @Override
+    public String recharge(String phoneNumber, NetworkProvider network, BigDecimal amount) {
+        try {
+            String requestBody = String.format("{\"phoneNumber\": \"%s\", \"network\": \"%s\", \"amount\": \"%s\", \"provider\": \"creditswitch\"}", phoneNumber, network, amount);
+
+            HttpResponse<String> response = Unirest.post(airtimeConfig.getTestRechargeUrl())
+                    .header("client-id", airtimeConfig.getRechargeTestKey())
+                    .header("Content-Type", "application/json")
+                    .body(requestBody)
+                    .asString();
+
+            System.out.println(response.getBody());
+            return response.getBody();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+            return "Error recharging: " + e.getMessage();
+        }
+    }
+
 }
 
