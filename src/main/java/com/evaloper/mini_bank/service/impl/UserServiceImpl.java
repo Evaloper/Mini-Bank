@@ -91,7 +91,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public NameAccountResponse nameAndAccountEnquiry(EnquiryRequest enquiryRequest) {
-        boolean isPhoneNumberExists = userRepository.existsByPhoneNumber(enquiryRequest.getPhoneNumber());
+        // Normalize the phone number from the request
+        String normalizedPhoneNumber = normalizePhoneNumber(enquiryRequest.getPhoneNumber());
+
+        // Check if the phone number exists in the database using the normalized phone number
+        boolean isPhoneNumberExists = userRepository.existsByPhoneNumber(normalizedPhoneNumber);
+        System.out.println("Normalized phone number: " + normalizedPhoneNumber);
+
 
         if (!isPhoneNumberExists) {
             return NameAccountResponse.builder()
@@ -99,11 +105,16 @@ public class UserServiceImpl implements UserService {
                     .responseMessage(AccountUtil.PHONE_NUMBER_NON_EXISTS_MESSAGE)
                     .firstName(null)
                     .lastName(null)
+                    .otherName(null)
                     .accountNumber(null)
                     .build();
         }
 
-        UserEntity foundUser = userRepository.findByPhoneNumber(enquiryRequest.getPhoneNumber());
+        // Find the user entity using the normalized phone number
+        UserEntity foundUser = userRepository.findByPhoneNumber(normalizedPhoneNumber);
+        System.out.println("Found user: " + foundUser);
+
+        // Return the response with the user details
         return NameAccountResponse.builder()
                 .responseCode(AccountUtil.PHONE_NUMBER_FOUND_CODE)
                 .responseMessage(AccountUtil.PHONE_NUMBER_FOUND_MESSAGE)
@@ -113,6 +124,7 @@ public class UserServiceImpl implements UserService {
                 .accountNumber(foundUser.getAccountNumber())
                 .build();
     }
+
 
 
     @Override
@@ -325,7 +337,7 @@ public class UserServiceImpl implements UserService {
             logger.info("New balance after deduction: {}", user.getAccountBalance());
 
             // Call the recharge method
-            String rechargeResponse = recharge(request.getPhoneNumber(), NetworkProvider.valueOf(request.getNetwork().name()), request.getAmount());
+            String rechargeResponse = recharge(normalizePhoneNumber(request.getPhoneNumber()), NetworkProvider.valueOf(request.getNetwork().name()), request.getAmount());
             logger.info("Recharge response: {}", rechargeResponse);
 
             // Save transaction
@@ -434,6 +446,24 @@ public class UserServiceImpl implements UserService {
             System.out.println(e.getMessage());
             return "Error recharging: " + e.getMessage();
         }
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            return null;
+        }
+        // Remove any non-digit characters
+        phoneNumber = phoneNumber.replaceAll("[^\\d]", "");
+
+        // Add country code if missing
+        if (phoneNumber.startsWith("0")) {
+            phoneNumber = "+234" + phoneNumber.substring(1);
+        } else if (!phoneNumber.startsWith("+234")) {
+            return "+" + phoneNumber;
+        }
+        System.out.println("Normalized phone number: " + phoneNumber);
+
+        return phoneNumber;
     }
 
 }
