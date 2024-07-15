@@ -25,11 +25,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public BankResponse registerUser(UserRequest userRequest) {
+        System.out.println("registerUser method called");
 
         // Checks if the user already exists
 
         String normalizedPhoneNumber = normalizePhoneNumber(userRequest.getPhoneNumber());
         String normalizedAlternativeNumber = normalizePhoneNumber(userRequest.getAlternativeNumber());
+
+        System.out.println("Checking phone number: " + userRequest.getPhoneNumber());
 
         if(userRepository.existsByPhoneNumber(normalizedPhoneNumber)){
             return BankResponse.builder()
@@ -110,8 +113,9 @@ public class AuthServiceImpl implements AuthService {
         if (phoneNumber.startsWith("0")) {
             phoneNumber = "+234" + phoneNumber.substring(1);
         } else if (!phoneNumber.startsWith("+")) {
-            phoneNumber = "+234" + phoneNumber;
+            return phoneNumber;
         }
+        System.out.println("Normalized phone number: " + phoneNumber);
 
         return phoneNumber;
     }

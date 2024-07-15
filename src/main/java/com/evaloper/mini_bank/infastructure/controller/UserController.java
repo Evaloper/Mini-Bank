@@ -32,12 +32,15 @@ public class UserController {
 
     @GetMapping("/check-phone")
     public ResponseEntity<Boolean> validatePhoneNumber(@RequestParam String phoneNumber) {
-        PhoneNumberEnquiryRequest request = PhoneNumberEnquiryRequest.builder().phoneNumber(phoneNumber).build();
+        String normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+        System.out.println("Checking phone number: " + normalizedPhoneNumber);
+        PhoneNumberEnquiryRequest request = PhoneNumberEnquiryRequest.builder().phoneNumber(normalizedPhoneNumber).build();
         PhoneNumberResponse response = userService.PhoneNumberEnquiry(request);
 
         // Check if the response indicates that the phone number exists
         boolean isValid = response != null && response.getPhoneNumber() != null;
         return ResponseEntity.ok(isValid);
+
     }
 
 
@@ -57,10 +60,16 @@ public class UserController {
 
     @GetMapping("/name-account-enquiry/{phoneNumber}")
     public ResponseEntity<NameAccountResponse> nameAndAccountEnquiry(@PathVariable String phoneNumber) {
-        EnquiryRequest request = EnquiryRequest.builder().phoneNumber(phoneNumber).build();
+        String normalizedPhoneNumber = normalizePhoneNumber(phoneNumber);
+        System.out.println("Checking phone number: " + normalizedPhoneNumber);
+        EnquiryRequest request = EnquiryRequest.builder().phoneNumber(normalizedPhoneNumber).build();
         NameAccountResponse response = userService.nameAndAccountEnquiry(request);
+        if (response == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
         return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/phone-enquiry")
     public ResponseEntity<PhoneNumberResponse> phoneNumberEnquiry(@RequestBody PhoneNumberEnquiryRequest request) {
@@ -94,6 +103,24 @@ public class UserController {
     @PostMapping("/buy-data")
     public BankResponse buyData(@RequestBody DataRequest request) {
         return userService.buyData(request);
+    }
+
+    private String normalizePhoneNumber(String phoneNumber) {
+        if (phoneNumber == null) {
+            return null;
+        }
+        // Remove any non-digit characters
+        phoneNumber = phoneNumber.replaceAll("[^\\d]", "");
+
+        // Add country code if missing
+        if (phoneNumber.startsWith("0")) {
+            phoneNumber = "+234" + phoneNumber.substring(1);
+        } else if (!phoneNumber.startsWith("+")) {
+            return "+" + phoneNumber;
+        }
+        System.out.println("Normalized phone number: " + phoneNumber);
+
+        return  phoneNumber;
     }
 }
 
